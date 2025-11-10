@@ -2,7 +2,7 @@
   "name": "Monetra",
   "short_name": "Monetra",
   "description": "Track balances of 3 different banks",
-  "start_url": "/",
+  "start_url": "https://cyberc0dex.github.io/monetra/",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#111827",

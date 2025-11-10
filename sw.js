@@ -1,10 +1,10 @@
-const CACHE_NAME = 'monetra-v1.0.0';
+const CACHE_NAME = 'monetra-v1.0.1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './manifest.json'
 ];
 
 // Install service worker and cache files
