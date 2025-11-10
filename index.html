@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111827">
+    <title>Monetra</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-192x192.png">
+</head>
+<body>
+    <div class="container">
+        <h1 class="app-title">Monetra💎</h1>
+        
+        <!-- Total Balance -->
+        <div class="total-card">
+            <p class="total-label">Total Assets</p>
+            <p class="total-amount" id="totalAmount">$ 0.00 BND</p>
+        </div>
+
+        <!-- Contribution Bar -->
+        <div class="contribution-bar" id="contributionBar">
+            <div class="bar-segment" id="segmentA"></div>
+            <div class="bar-segment" id="segmentB"></div>
+            <div class="bar-segment" id="segmentC"></div>
+        </div>
+
+        <!-- Bank Sections -->
+        <div class="banks-container">
+            <div class="bank-card">
+                <div class="bank-info">
+                    <p class="bank-name">TAIB</p> 
+                    <p class="bank-balance bank-a-color" id="balanceA">$ 0.00 BND</p>
+                </div>
+                <button class="edit-btn" onclick="openEditModal('bankA')">✎</button>
+            </div>
+
+            <div class="bank-card">
+                <div class="bank-info">
+                    <p class="bank-name">BIBD</p>
+                    <p class="bank-balance bank-b-color" id="balanceB">$ 0.00 BND</p>
+                </div>
+                <button class="edit-btn" onclick="openEditModal('bankB')">✎</button>
+            </div>
+
+            <div class="bank-card">
+                <div class="bank-info">
+                    <p class="bank-name">BAIDURI</p>
+                    <p class="bank-balance bank-c-color" id="balanceC">$ 0.00 BND</p>
+                </div>
+                <button class="edit-btn" onclick="openEditModal('bankC')">✎</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modalTitle">Bank Name</h2>
+            <input type="number" step="0.01" class="modal-input" id="modalInput" placeholder="Enter balance">
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-save" onclick="saveBalance()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Service Worker disabled during development
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
+        
+    </script>
+</body>
+</html>
