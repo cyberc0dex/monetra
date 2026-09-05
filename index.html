@@ -1,96 +1,25 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#111827">
-    <title>Monetra</title>
-    
-    <!-- iOS PWA Support -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Balance Tracker">
-    
-    <!-- iOS Icons -->
-    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167x167.png">
-    
-    <!-- Standard -->
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="icons/icon-192x192.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#eef6ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Monetra">
+  <meta name="description" content="Monetra personal value, account, vehicle and activity tracker.">
+  <title>Monetra</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="assets/icons/app-icon-512.png" type="image/png" sizes="512x512">
+  <link rel="icon" href="assets/icons/app-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/app-icon-512.png">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1 class="app-title">Bank Vault</h1>
-        
-        <!-- Total Balance -->
-        <div class="total-card">
-            <p class="total-label">Total Assets</p>
-            <p class="total-amount" id="totalAmount">$ 0.00 BND</p>
-        </div>
-
-        <!-- Contribution Bar -->
-        <div class="contribution-bar" id="contributionBar">
-            <div class="bar-segment" id="segmentA"></div>
-            <div class="bar-segment" id="segmentB"></div>
-            <div class="bar-segment" id="segmentC"></div>
-        </div>
-
-        <!-- Bank Sections -->
-        <div class="banks-container">
-            <div class="bank-card">
-                <div class="bank-info">
-                    <p class="bank-name">TAIB</p> 
-                    <p class="bank-balance bank-a-color" id="balanceA">$ 0.00 BND</p>
-                </div>
-                <button class="edit-btn" onclick="openEditModal('bankA')">✎</button>
-            </div>
-
-            <div class="bank-card">
-                <div class="bank-info">
-                    <p class="bank-name">BIBD</p>
-                    <p class="bank-balance bank-b-color" id="balanceB">$ 0.00 BND</p>
-                </div>
-                <button class="edit-btn" onclick="openEditModal('bankB')">✎</button>
-            </div>
-
-            <div class="bank-card">
-                <div class="bank-info">
-                    <p class="bank-name">BAIDURI</p>
-                    <p class="bank-balance bank-c-color" id="balanceC">$ 0.00 BND</p>
-                </div>
-                <button class="edit-btn" onclick="openEditModal('bankC')">✎</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Modal -->
-    <div class="modal" id="editModal">
-        <div class="modal-content">
-            <h2 class="modal-title" id="modalTitle">Bank Name</h2>
-            <input type="number" step="0.01" class="modal-input" id="modalInput" placeholder="Enter balance">
-            <div class="modal-buttons">
-                <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-save" onclick="saveBalance()">Save Changes</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-    <script>
-        // Service Worker disabled during development
-        
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker registration failed'));
-            });
-        }
-        
-    </script>
+  <main id="app" class="app-shell" aria-live="polite"></main>
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

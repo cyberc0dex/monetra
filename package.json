@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "icons:build": "node scripts/generate-icon-sprite.mjs"
+  },
+  "dependencies": {
+    "lucide-static": "^1.41.0"
+  }
+}
