@@ -63,11 +63,27 @@
     setTimeout(() => { root.innerHTML = ""; }, 2200);
   };
   const commit = (message = "Saved") => { saveState(); render(); closeModal(); toast(message); };
-  const closeModal = () => { $modal.innerHTML = ""; document.body.style.overflow = ""; };
-  const showModal = html => {
-    $modal.innerHTML = `<div class="modal-backdrop" data-dismiss="true"><section class="modal" role="dialog" aria-modal="true">${html}</section></div>`;
+  let modalCloseTimer;
+  const closeModal = () => {
+    const backdrop = $modal.firstElementChild;
+    if (!backdrop || backdrop.classList.contains("closing")) return;
+    if ($modal.contains(document.activeElement)) document.activeElement.blur();
+    const finish = () => {
+      if ($modal.firstElementChild !== backdrop) return;
+      $modal.innerHTML = "";
+      document.body.style.overflow = "";
+    };
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { finish(); return; }
+    backdrop.classList.add("closing");
+    backdrop.inert = true;
+    modalCloseTimer = setTimeout(finish, backdrop.classList.contains("alert-backdrop") ? 160 : 300);
+  };
+  const showModal = (html, alert = false) => {
+    clearTimeout(modalCloseTimer);
+    if ($modal.contains(document.activeElement)) document.activeElement.blur();
+    $modal.innerHTML = `<div class="modal-backdrop ${alert?"alert-backdrop":""}" data-dismiss="true"><section class="modal ${alert?"alert-modal":""}" tabindex="-1" role="${alert?"alertdialog":"dialog"}" ${alert?'aria-labelledby="alert-title" aria-describedby="alert-description"':""} aria-modal="true">${html}</section></div>`;
     document.body.style.overflow = "hidden";
-    $modal.querySelector(".modal")?.focus();
+    $modal.querySelector(".modal")?.focus({preventScroll:true});
   };
   const modalHead = title => `<header class="modal-head"><h2 class="modal-title">${esc(title)}</h2><button class="close" type="button" data-close aria-label="Close">×</button></header>`;
   const formActions = (label = "Save") => `<div class="actions"><button class="btn ghost" type="button" data-close>Cancel</button><button class="btn" type="submit">${esc(label)}</button></div>`;
@@ -76,6 +92,7 @@
   ].map(([id,label]) => `<button class="nav-button ${activeView===id?"active":""}" data-nav="${id}" aria-current="${activeView===id?"page":"false"}"><span class="nav-icon">${icon(id)}</span>${label}</button>`).join("")}</nav>`;
 
   function homeView() {
+    homeBalancesVisible = false;
     const p = profile();
     const total = p.accounts.reduce((sum, account) => sum + Number(account.amount), 0);
     const privacyClass = homeBalancesVisible ? "" : "masked";
@@ -86,7 +103,7 @@
       <div class="card-list">${p.accounts.map(account => {const balance=money(account.amount);return `<button class="list-card" data-action="edit-account" data-id="${account.id}">${accountTag(account)}<span class="row-copy"><span class="row-title">${esc(account.title)}</span><span class="row-value private-amount ${privacyClass}" data-balance="${balance}" aria-label="${homeBalancesVisible?balance:"Balance hidden"}">${homeBalancesVisible?balance:hiddenBalance}</span></span>${icon("chevron","chevron")}</button>`;}).join("")}</div></section>`;
   }
   function valueView() {
-    return `<section class="screen"><div class="section-head"><div><h1 class="page-title">Worth it?</h1><p class="subtitle">See how much your items cost per day</p></div><button class="btn small" data-action="add-value">${icon("plus")}Add</button></div>
+    return `<section class="screen"><div class="section-head"><div><h1 class="page-title">Worth it?</h1><p class="subtitle">See how much your items cost per day</p></div><button class="btn circle-add" data-action="add-value" aria-label="Add Value item">${icon("plus")}</button></div>
       <div class="select-row"><label for="value-sort">Sort by</label><select id="value-sort"><option value="latest">Latest</option><option value="cost">Cost</option><option value="best">Best Value</option></select></div>
       <div id="value-list" class="card-list"></div></section>`;
   }
@@ -152,24 +169,24 @@
   }
   function vehicleView() {
     const v=profile().vehicle,data=vehicleData(v),file=`Vehicle_${v.vehicleType}_${v.vehicleColour}.png`;
-    return `<section class="screen"><h1 class="page-title">Vehicle</h1><p class="subtitle">Your vehicle loan at a glance.</p>
+    return `<section class="screen"><h1 class="page-title">Vehicle</h1><p class="subtitle">Your vehicle loan at a glance</p>
       ${data?`<div class="vehicle-visual"><img class="vehicle-image" src="assets/vehicles/${file}" onerror="this.src='assets/vehicles/Vehicle_SUV_White.png'" alt="${esc(v.vehicleColour)} ${esc(v.vehicleType)} placeholder"><div class="vehicle-name">${esc(v.name)}</div></div><div class="loan-panel"><div class="loan-grid"><div class="loan-stat"><span class="meta">Loan Balance</span><strong>${money(data.balance)}</strong></div><div class="loan-stat"><span class="meta">Loan Total</span><strong>${money(v.loanTotal)}</strong></div></div><h3 class="section-title">Loan Balance Over Time</h3>${graphSvg(data)}<div class="mini-grid"><div class="mini-stat"><span class="meta">Original Price</span><strong>${money(v.originalPrice)}</strong></div><div class="mini-stat"><span class="meta">Monthly Payment</span><strong>${money(v.monthlyPayment)}</strong></div><div class="mini-stat"><span class="meta">Payments Made</span><strong>${data.paymentsMade}</strong></div><div class="mini-stat"><span class="meta">Remaining</span><strong>${data.remaining} months</strong></div></div></div>`:`<div class="empty-card subtle-empty"><strong>No Data</strong>Configure your loan details to see the balance and graph.</div>`}
-      <button class="btn full" style="margin-top:12px" data-action="edit-vehicle">${icon("edit")}Edit Vehicle</button></section>`;
+      <button class="btn full" style="margin-top:12px" data-action="edit-vehicle">${icon("edit")}Configure</button></section>`;
   }
   const relativeActivity = date => { const days=calendarDays(isoToday(),date); return days>0?`In ${days} day${days===1?"":"s"}`:`${Math.abs(days)} day${Math.abs(days)===1?"":"s"} ago`; };
   function activityView() {
     const items=[...profile().activities], upcoming=items.filter(a=>a.date>isoToday()).sort((a,b)=>a.date.localeCompare(b.date)), past=items.filter(a=>a.date<=isoToday()).sort((a,b)=>b.date.localeCompare(a.date));
     const cards=(list,future)=>list.length?list.map(item=>`<button class="list-card" data-action="view-activity" data-id="${item.id}">${iconBubble(item.icon,future?"":"purple")}<span class="row-copy"><span class="row-title">${esc(item.name)}</span><span class="meta">${displayDate(item.date)}</span></span><span class="${future?"days-badge":"past-label"}">${relativeActivity(item.date)}</span></button>`).join(""):`<div class="empty-card subtle-empty"><strong>${future?"Nothing upcoming":"No past activities"}</strong>${future?"Add an activity when you have something planned.":"Completed activities will appear here."}</div>`;
-    return `<section class="screen"><div class="section-head"><div><h1 class="page-title">Activities</h1><p class="subtitle">Keep track of noteworthy activities.</p></div><button class="btn small" data-action="add-activity">${icon("plus")}Add</button></div><h3 class="section-title">Upcoming</h3><div class="card-list">${cards(upcoming,true)}</div><h3 class="section-title">Past Activities</h3><div class="card-list">${cards(past,false)}</div></section>`;
+    return `<section class="screen"><div class="section-head"><div><h1 class="page-title">Activities</h1><p class="subtitle">Keep track of noteworthy activities</p></div><button class="btn circle-add" data-action="add-activity" aria-label="Add activity">${icon("plus")}</button></div><h3 class="section-title">Upcoming</h3><div class="card-list">${cards(upcoming,true)}</div><h3 class="section-title">Past Activities</h3><div class="card-list">${cards(past,false)}</div></section>`;
   }
   function settingsView() {
     const p=profile(), profiles=Object.values(state.profiles);
     return `<section class="screen"><h1 class="page-title">Settings</h1><div class="settings-group"><h3 class="section-title">About Me</h3><div class="settings-card"><button class="setting-row" data-action="edit-profile-info">${iconBubble("user")}<span class="row-copy"><span class="row-title">My Profile</span><span class="meta">${esc(p.profileInfo.displayName)}</span></span>${icon("chevron","chevron")}</button></div></div>
       <div class="settings-group"><h3 class="section-title">Manage Profiles</h3><div class="settings-card">${profiles.map(item=>`<button class="setting-row" data-action="profile-menu" data-id="${item.id}">${iconBubble("user")}<span class="row-copy"><span class="row-title">${esc(item.profileInfo.displayName)}</span></span>${item.id===p.id?'<span class="current-tag">Current Profile</span>':icon("chevron","chevron")}</button>`).join("")}<button class="setting-row" data-action="add-profile">${iconBubble("plus")}<span class="row-title">Add New Profile</span>${icon("chevron","chevron")}</button></div></div>
-      <div class="settings-group"><h3 class="section-title">Data</h3><div class="settings-card"><button class="setting-row" data-action="clear-data">${iconBubble("trash")}<span class="row-copy"><span class="row-title">Clear Data</span><span class="meta">Reset current profile to default values.</span></span>${icon("chevron","chevron")}</button></div></div>
-      <div class="settings-group"><h3 class="section-title">About</h3><div class="settings-card"><div class="setting-row">${iconBubble("value")}<span class="row-copy"><span class="row-title">Monetra v2.0 Production</span></span></div></div></div></section>`;
+      <div class="settings-group"><h3 class="section-title">Data</h3><div class="settings-card"><button class="setting-row" data-action="clear-data">${iconBubble("trash","danger")}<span class="row-copy"><span class="row-title">Clear Data</span><span class="meta">Reset current profile to default values.</span></span>${icon("chevron","chevron")}</button></div></div>
+      <div class="settings-group"><h3 class="section-title">App Version</h3><div class="settings-card"><div class="setting-row app-version">${iconBubble("info")}<span class="row-copy"><span class="row-title">Monetra v2.${config.release} - ${isProduction?"Production":"Development"}</span></span></div></div></div></section>`;
   }
-  function render() {
+  function render(animate = false) {
     const views={home:homeView,value:valueView,vehicle:vehicleView,activity:activityView,settings:settingsView};
     const nextScreen=(views[activeView]||homeView)();
     const currentScreen=$app.querySelector(".screen");
@@ -182,6 +199,7 @@
       button.setAttribute("aria-current",selected?"page":"false");
     });
     if(activeView==="value") renderValueList();
+    if(animate) $app.querySelector(".screen")?.classList.add("screen-enter");
   }
 
   function updateHomeBalanceVisibility() {
@@ -190,7 +208,7 @@
     $app.querySelectorAll(".private-amount").forEach(amount=>{const balance=amount.dataset.balance||"";amount.classList.toggle("masked",!homeBalancesVisible);amount.textContent=homeBalancesVisible?balance:hiddenBalance;amount.setAttribute("aria-label",homeBalancesVisible?balance:"Balance hidden");});
   }
 
-  function iconPicker(selected) { return `<div class="field-label">Icon</div><div class="icon-grid">${config.availableIcons.map(name=>`<button type="button" class="icon-option ${name===selected?"selected":""}" data-icon="${name}" aria-label="${name}">${icon(name)}</button>`).join("")}</div><input type="hidden" name="icon" value="${esc(selected||config.availableIcons[0])}">`; }
+  function iconPicker(selected, choices) { return `<div class="field-label">Icon</div><div class="icon-grid">${choices.map(name=>`<button type="button" class="icon-option ${name===selected?"selected":""}" data-icon="${name}" aria-label="${name}">${icon(name)}</button>`).join("")}</div><input type="hidden" name="icon" value="${esc(selected||choices[0])}">`; }
   function accountTagPicker(selected) { const current=config.accountTagColours.includes(selected)?selected:config.accountTagColours[0];return `<div class="field-label">Colour Tag</div><div class="tag-grid">${config.accountTagColours.map((colour,index)=>`<button type="button" class="tag-option ${colour===current?"selected":""}" style="--tag-colour:${colour};--tag-tint:${colour}22" data-tag-color="${colour}" aria-label="Colour tag ${index+1}"><span class="tag-swatch" aria-hidden="true"></span></button>`).join("")}</div><input type="hidden" name="tagColor" value="${current}">`; }
   function bindForm(form, callback) { form.addEventListener("submit", event=>{event.preventDefault();const data=Object.fromEntries(new FormData(form));callback(data,form);}); }
   function validation(form, rules) { let ok=true; form.querySelectorAll(".field-error").forEach(e=>e.textContent=""); for(const [name,message,test] of rules){const input=form.elements[name];if(!test(input.value)){input.closest(".field")?.querySelector(".field-error")?.append(message);input.focus();ok=false;break;}}return ok; }
@@ -200,14 +218,14 @@
     bindForm(document.querySelector("#account-form"),data=>{const f=document.querySelector("#account-form");if(!validation(f,[["title","Enter an account title.",v=>v.trim().length>0],["amount","Enter a non-negative amount.",v=>v!==""&&Number(v)>=0]]))return;const record={id:existing?.id||uid("account"),title:data.title.trim(),amount:Number(data.amount),icon:"money",tagColor:config.accountTagColours.includes(data.tagColor)?data.tagColor:config.accountTagColours[0]};if(editing)Object.assign(existing,record);else profile().accounts.push(record);commit(editing?"Account updated":"Account added");});
   }
   function valueModal(id) {
-    const existing=profile().valueItems.find(a=>a.id===id),editing=Boolean(existing),selected=existing?.icon||"laptop";
-    showModal(`${modalHead(editing?"Edit Item":"Add Item")}<form id="value-form"><div class="field"><label>Item Name<input name="name" value="${esc(existing?.name||"")}" placeholder="e.g. Laptop" required></label><span class="field-error"></span></div><div class="field"><label>Purchase Cost<input name="purchaseCost" type="number" min="0" step="0.01" value="${existing?.purchaseCost??""}" placeholder="0.00" required></label><span class="field-error"></span></div><div class="field"><label>Date of Purchase<input name="purchaseDate" type="date" max="${isoToday()}" value="${existing?.purchaseDate||isoToday()}" required></label><span class="field-error"></span></div>${iconPicker(selected)}${formActions()}</form>`);
+    const existing=profile().valueItems.find(a=>a.id===id),editing=Boolean(existing),selected=existing?.icon||config.itemIcon[0];
+    showModal(`${modalHead(editing?"Edit Item":"Add Item")}<form id="value-form"><div class="field"><label>Item Name<input name="name" value="${esc(existing?.name||"")}" placeholder="e.g. Laptop" required></label><span class="field-error"></span></div><div class="field"><label>Purchase Cost<input name="purchaseCost" type="number" min="0" step="0.01" value="${existing?.purchaseCost??""}" placeholder="0.00" required></label><span class="field-error"></span></div><div class="field"><label>Date of Purchase<input name="purchaseDate" type="date" max="${isoToday()}" value="${existing?.purchaseDate||isoToday()}" required></label><span class="field-error"></span></div>${iconPicker(selected, config.itemIcon)}${formActions()}</form>`);
     bindForm(document.querySelector("#value-form"),data=>{const f=document.querySelector("#value-form");if(!validation(f,[["name","Enter an item name.",v=>v.trim().length>0],["purchaseCost","Enter a non-negative cost.",v=>v!==""&&Number(v)>=0],["purchaseDate","Choose today or an earlier date.",v=>v&&v<=isoToday()]]))return;const record={id:existing?.id||uid("value"),name:data.name.trim(),purchaseCost:Number(data.purchaseCost),purchaseDate:data.purchaseDate,icon:data.icon};if(editing)Object.assign(existing,record);else profile().valueItems.push(record);commit(editing?"Item updated":"Item added");});
   }
   function valueDetail(id) { const item=profile().valueItems.find(a=>a.id===id);if(!item)return;showModal(`${modalHead("Item Detail")}<div class="detail-hero">${iconBubble(item.icon)}<h2>${esc(item.name)}</h2><div class="detail-rate">${money(item.purchaseCost/ownershipDays(item.purchaseDate))} per day</div></div><div class="detail-grid"><div class="detail-line"><span>Purchase Date</span><strong>${displayDate(item.purchaseDate)}</strong></div><div class="detail-line"><span>Purchase Cost</span><strong>${money(item.purchaseCost)}</strong></div><div class="detail-line"><span>Ownership</span><strong>${ownershipDays(item.purchaseDate)} days</strong></div></div><div class="actions"><button class="btn" data-edit-value="${id}">${icon("edit")}Edit</button><button class="btn danger" data-delete-value="${id}">${icon("trash")}Delete</button></div>`); }
   function activityModal(id) {
-    const existing=profile().activities.find(a=>a.id===id),editing=Boolean(existing),selected=existing?.icon||"wrench";
-    showModal(`${modalHead(editing?"Edit Activity":"Add Activity")}<form id="activity-form"><div class="field"><label>Activity Name<input name="name" value="${esc(existing?.name||"")}" placeholder="e.g. Car Servicing" required></label><span class="field-error"></span></div><div class="field"><label>Date<input name="date" type="date" value="${existing?.date||isoToday()}" required></label><span class="field-error"></span></div><div class="field"><label>Notes (Optional)<textarea name="notes" placeholder="Details, location, etc.">${esc(existing?.notes||"")}</textarea></label><span class="field-error"></span></div>${iconPicker(selected)}${formActions()}</form>`);
+    const existing=profile().activities.find(a=>a.id===id),editing=Boolean(existing),selected=existing?.icon||config.activityIcon[0];
+    showModal(`${modalHead(editing?"Edit Activity":"Add Activity")}<form id="activity-form"><div class="field"><label>Activity Name<input name="name" value="${esc(existing?.name||"")}" placeholder="e.g. Car Servicing" required></label><span class="field-error"></span></div><div class="field"><label>Date<input name="date" type="date" value="${existing?.date||isoToday()}" required></label><span class="field-error"></span></div><div class="field"><label>Notes (Optional)<textarea name="notes" placeholder="Details, location, etc.">${esc(existing?.notes||"")}</textarea></label><span class="field-error"></span></div>${iconPicker(selected, config.activityIcon)}${formActions()}</form>`);
     bindForm(document.querySelector("#activity-form"),data=>{const f=document.querySelector("#activity-form");if(!validation(f,[["name","Enter an activity name.",v=>v.trim().length>0],["date","Choose a valid date.",v=>/^\d{4}-\d{2}-\d{2}$/.test(v)]]))return;const record={id:existing?.id||uid("activity"),name:data.name.trim(),date:data.date,notes:data.notes.trim(),icon:data.icon};if(editing)Object.assign(existing,record);else profile().activities.push(record);commit(editing?"Activity updated":"Activity added");});
   }
   function activityDetail(id) { const item=profile().activities.find(a=>a.id===id);if(!item)return;showModal(`${modalHead("Activity Detail")}<div class="detail-hero">${iconBubble(item.icon)}<h2>${esc(item.name)}</h2><div class="days-badge" style="display:inline-block">${relativeActivity(item.date)}</div></div><div class="detail-grid"><div class="detail-line"><span>Date</span><strong>${displayDate(item.date)}</strong></div>${item.notes?`<div class="detail-line"><span>Notes</span><strong>${esc(item.notes)}</strong></div>`:""}</div><div class="actions"><button class="btn" data-edit-activity="${id}">${icon("edit")}Edit</button><button class="btn danger" data-delete-activity="${id}">${icon("trash")}Delete</button></div>`); }
@@ -224,11 +242,11 @@
   function profileInfoModal() { const info=profile().profileInfo;showModal(`${modalHead("About Me")}<form id="profile-info-form"><div class="field"><label>Display Name<input name="displayName" value="${esc(info.displayName)}" required></label><span class="field-error"></span></div><div class="field"><label>Caption<input name="caption" value="${esc(info.caption)}"></label><span class="field-error"></span></div>${formActions()}</form>`);bindForm(document.querySelector("#profile-info-form"),data=>{const f=document.querySelector("#profile-info-form");if(!validation(f,[["displayName","Enter a display name.",v=>v.trim().length>0]]))return;info.displayName=data.displayName.trim();info.caption=data.caption.trim();commit("Profile updated");}); }
   function addProfileModal() { showModal(`${modalHead("Add New Profile")}<form id="add-profile-form"><div class="field"><label>Display Name<input name="displayName" placeholder="e.g. Alex" required></label><span class="field-error"></span></div>${formActions("Create Profile")}</form>`);bindForm(document.querySelector("#add-profile-form"),data=>{const f=document.querySelector("#add-profile-form");if(!validation(f,[["displayName","Enter a display name.",v=>v.trim().length>0]]))return;const next=createDefaultProfile(undefined,data.displayName.trim());state.profiles[next.id]=next;state.currentProfileId=next.id;commit("Profile created");}); }
   function profileMenu(id) { const item=state.profiles[id],current=id===state.currentProfileId;showModal(`${modalHead(esc(item.profileInfo.displayName))}<p class="confirm-copy">${current?"This is your current profile.":"Switch to this profile to view its separate accounts, Value items, vehicle and activities."}</p>${current?"":`<button class="btn full" data-switch-profile="${id}">Switch Profile</button>`}<div class="danger-zone"><button class="btn danger full" data-request-delete-profile="${id}" ${Object.keys(state.profiles).length===1?"disabled":""}>${icon("trash")}Delete Profile</button>${Object.keys(state.profiles).length===1?'<p class="meta">The last remaining profile cannot be deleted.</p>':""}</div>`); }
-  function confirmModal(title,copy,confirmLabel,action,id="") { showModal(`${modalHead(title)}<p class="confirm-copy">${esc(copy)}</p><div class="actions"><button class="btn ghost" data-close>Cancel</button><button class="btn danger" data-confirm="${action}" data-id="${id}">${esc(confirmLabel)}</button></div>`); }
+  function confirmModal(title,copy,confirmLabel,action,id="") { showModal(`${modalHead(title).replace('class="modal-title"', 'class="modal-title" id="alert-title"')}<p class="confirm-copy" id="alert-description">${esc(copy)}</p><div class="actions"><button class="btn ghost" data-close>Cancel</button><button class="btn danger" data-confirm="${action}" data-id="${id}">${esc(confirmLabel)}</button></div>`, true); }
   function removeRecord(collection,id,message){profile()[collection]=profile()[collection].filter(item=>item.id!==id);commit(message);}
 
   document.addEventListener("click", event => {
-    const navButton=event.target.closest("[data-nav]"); if(navButton){activeView=navButton.dataset.nav;render();scrollTo(0,0);return;}
+    const navButton=event.target.closest("[data-nav]"); if(navButton){if(navButton.dataset.nav===activeView)return;activeView=navButton.dataset.nav;render(true);scrollTo(0,0);return;}
     if(event.target.matches("[data-dismiss]")||event.target.closest("[data-close]")){closeModal();return;}
     const iconBtn=event.target.closest("[data-icon]");if(iconBtn){const form=iconBtn.closest("form");form.querySelectorAll("[data-icon]").forEach(b=>b.classList.remove("selected"));iconBtn.classList.add("selected");form.elements.icon.value=iconBtn.dataset.icon;return;}
     const tagBtn=event.target.closest("[data-tag-color]");if(tagBtn){const form=tagBtn.closest("form");form.querySelectorAll("[data-tag-color]").forEach(b=>b.classList.remove("selected"));tagBtn.classList.add("selected");form.elements.tagColor.value=tagBtn.dataset.tagColor;return;}

@@ -1,8 +1,12 @@
 /* Switch to "production" for localStorage, PWA installation and offline caching. */
-window.MONETRA_CONFIG = Object.freeze({
+globalThis.MONETRA_CONFIG = Object.freeze({
+  release: 20,
   environment: "production",
   storageKey: "monetra-state-v1",
   schemaVersion: 1,
+  // Lucide symbol names; each list controls its own modal picker.
+  itemIcon: ["laptop", "gamepad-2", "shopping-bag", "utensils", "package", "car", "dumbbell", "wrench", "house", "building"],
+  activityIcon: ["laptop", "car", "gamepad-2", "dumbbell", "plane", "house", "utensils", "shopping-bag", "wrench", "package"],
   availableIcons: [
     "laptop", "car", "gamepad-2", "dumbbell", "plane",
     "house", "utensils", "shopping-bag", "wrench", "package"

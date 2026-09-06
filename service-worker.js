@@ -1,4 +1,5 @@
-const CACHE = "monetra-shell-v17";
+importScripts("./js/config.js");
+const CACHE = `monetra-shell-v${globalThis.MONETRA_CONFIG.release}`;
 const SHELL = [
   "./",
   "./index.html",
